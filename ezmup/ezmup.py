@@ -181,7 +181,7 @@ class Ezmup:
                     requires_grad=True,
                 ).to(dtype=named_module.weight.dtype)
 
-            if hasattr(named_module, "bias"):
+            if hasattr(named_module, "bias") and named_module.bias is not None:
                 named_module.bias = torch.nn.Parameter(
                     new_param_dict[name + ".bias"],
                     requires_grad=True,
@@ -281,7 +281,7 @@ def convert_fdict(d: dict[Any, Any]) -> dict[Any, Any]:
     )
 
 
-def _record_coords(
+def record_coords(
     records,
     width,
     modulename,
@@ -347,8 +347,8 @@ def _record_coords(
 
     def f(module, input, output):
         def get_stat(d, x, fdict):
-            if isinstance(x, tuple | list):
-                for i, _x in enumerate(x):
+            if isinstance(x, tuple) or isinstance(x, list):
+                for i, _x in enumerate(x[:1]):
                     _d = copy(d)
                     _d["module"] += f"[{i}]"
                     get_stat(_d, _x, fdict)
@@ -370,8 +370,8 @@ def _record_coords(
             ret = {"width": width, "module": modulename, "t": t}
 
             # output stats
-            if isinstance(output, tuple | list):
-                for i, out in enumerate(output):
+            if isinstance(output, tuple) or isinstance(output, list):
+                for i, out in enumerate(output[:1]):
                     _ret = copy(ret)
                     _ret["module"] += f":out[{i}]"
                     get_stat(_ret, out, output_fdict)
@@ -391,7 +391,7 @@ def _record_coords(
 
             # input stats
             if input_fdict:
-                if isinstance(input, tuple | list):
+                if isinstance(input, tuple) or isinstance(input, list):
                     for i, out in enumerate(input):
                         _ret = copy(ret)
                         _ret["module"] += f":in[{i}]"
@@ -466,7 +466,7 @@ def get_coord_data(
                 for name, module in model_engine.model.named_modules():
                     remove_hooks.append(
                         module.register_forward_hook(
-                            _record_coords(
+                            record_coords(
                                 df,
                                 width,
                                 name,
