@@ -39,6 +39,9 @@ LAYER_REGISTRY = {
     "Linear.weight": SPECTRAL_DEFAULT,
     "Linear.bias": SPECTRAL_DEFAULT,
     "Embedding.weight": (1.0, 1.0),
+    "Embedding.bias": (0.0, 1.0),
+    "InfiniteVocabEmbedding.weight": (1.0,1.0),
+    "InfiniteVocabEmbedding.bias": (0.0,1.0),
     "BatchNorm2d.weight": (1.0, 1.0),
     "BatchNorm2d.bias": (0.0, 1.0),
     "LayerNorm.weight": (1.0, 1.0),
@@ -176,12 +179,14 @@ class Ezmup:
 
         for name, named_module in self.model.named_modules():
             if hasattr(named_module, "weight"):
+                print(f"Updated weight parameters of {named_module}")
                 named_module.weight = torch.nn.Parameter(
                     new_param_dict[name + ".weight"],
                     requires_grad=True,
                 ).to(dtype=named_module.weight.dtype)
 
             if hasattr(named_module, "bias") and named_module.bias is not None:
+                print(f"Updated bias parameters of {named_module}")
                 named_module.bias = torch.nn.Parameter(
                     new_param_dict[name + ".bias"],
                     requires_grad=True,
