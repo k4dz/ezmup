@@ -96,8 +96,6 @@ class Ezmup:
                 for dim in shape
             ]
 
-            print(f"Now changing {name} from {shape} to {new_shape}")
-
             # if this is not a new layer, we want to skip it.
             if all(dim == new_shape[i] for i, dim in enumerate(shape)):
                 new_param_dict[name] = param
@@ -115,7 +113,6 @@ class Ezmup:
                     if name.endswith("bias")
                     else name[: -len(".weight")]
                 )
-                # print(name)
                 module_with_name = self.model.get_submodule(oname)
 
                 if module_with_name is None:
@@ -125,7 +122,6 @@ class Ezmup:
 
                 module_class = module_with_name.__class__.__name__
                 param_classname = module_class + ".bias"
-                # print(param_classname)
 
                 if param_classname in LAYER_REGISTRY:
                     init_std, lr_scaling = LAYER_REGISTRY[param_classname]
@@ -135,8 +131,8 @@ class Ezmup:
                             oname + ".weight"
                         ][-1]
                         if fan_in_of_weight % self.width_basis == 0:
-                            fan_in_of_weight = fan_in_of_weight * (
-                                new_width // self.width_basis
+                            fan_in_of_weight = new_width * (
+                                fan_in_of_weight // self.width_basis
                             )
                         fan_in = fan_in_of_weight
                         fan_out = 1
@@ -151,11 +147,7 @@ class Ezmup:
                     raise NotImplementedError(msg)
 
             else:
-                # we don't recognize this parameter : it is not a bias or a weight.
-                # so we will assume fan_in and fan_out are simply the product of the dimensions.
-                fan_in = weight_shape[-1]
-                fan_out = np.prod(weight_shape[:-1])
-                init_std, lr_scaling = SPECTRAL_DEFAULT
+                raise Exception(f'Not recognized : {name}')
 
             # assert fan_in * fan_out == np.prod(new_shape), f"fan_in * fan_out != np.prod(new_shape) for {name}, {fan_in * fan_out} != {np.prod(new_shape)}"
             print(f"{name} fan_in: {fan_in}, fan_out: {fan_out}")
@@ -175,13 +167,20 @@ class Ezmup:
             new_param = torch.randn(new_shape) * init_std
             new_param_dict[name] = new_param
 
-            # print(f"Changing {name} from {shape} to {new_shape}")
+            print(f"Changing {name} from {shape} to {new_shape}")
 
         for name, named_module in self.model.named_modules():
+
             if hasattr(named_module, "weight"):
                 print(f"Updated weight parameters of {named_module}")
+                new_weights = new_param_dict[name + ".weight"]
+
+                if isinstance(named_module, nn.LayerNorm):
+                    print(f"LayerNorm normalized_shape {new_weights.shape}")
+                    named_module.normalized_shape = new_weights.shape
+
                 named_module.weight = torch.nn.Parameter(
-                    new_param_dict[name + ".weight"],
+                    new_weights,
                     requires_grad=True,
                 ).to(dtype=named_module.weight.dtype)
 
