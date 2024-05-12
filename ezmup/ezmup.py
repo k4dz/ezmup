@@ -38,9 +38,9 @@ LAYER_REGISTRY = {
     "ConvTranspose3d.bias": SPECTRAL_DEFAULT,
     "Linear.weight": SPECTRAL_DEFAULT,
     "Linear.bias": SPECTRAL_DEFAULT,
-    "Embedding.weight": (1.0, 1.0),
+    "Embedding.weight": (0.02, 1.0),
     "Embedding.bias": (0.0, 1.0),
-    "InfiniteVocabEmbedding.weight": (1.0,1.0),
+    "InfiniteVocabEmbedding.weight": (0.02,1.0),
     "InfiniteVocabEmbedding.bias": (0.0,1.0),
     "BatchNorm2d.weight": (1.0, 1.0),
     "BatchNorm2d.bias": (0.0, 1.0),
@@ -121,7 +121,7 @@ class Ezmup:
                     raise ValueError(msg)
 
                 module_class = module_with_name.__class__.__name__
-                param_classname = module_class + ".bias"
+                param_classname = module_class + ".bias" if name.endswith("bias") else module_class + ".weight"
 
                 if param_classname in LAYER_REGISTRY:
                     init_std, lr_scaling = LAYER_REGISTRY[param_classname]
@@ -206,12 +206,20 @@ class Ezmup:
         """
         mup_scaling = self.lr_scaling_dict
 
-        optimizer_groups = [
-            {"params": [p], "lr": lr * mup_scaling.get(name, 1.0)}
-            for name, p in self.model.named_parameters()
-        ]
+        print(f"mup_scaling keys: {mup_scaling.keys()}")
 
-        return optimizer_class(optimizer_groups, **kwargs)
+        optimizer_groups = []
+        for name, p in self.model.named_parameters():
+            lr_scaled = lr * mup_scaling.get(name, 1.0)
+            print("name of param", name, "lr scaled", lr_scaled)
+            optimizer_groups.append({"params": [p], "lr": lr_scaled })
+
+        optimizer = optimizer_class(optimizer_groups, **kwargs)
+
+        for group in optimizer.param_groups:
+            print(group["lr"])
+
+        return optimizer
 
     def _get_init_std(self, name):
         if isinstance(self.init_std, dict):
