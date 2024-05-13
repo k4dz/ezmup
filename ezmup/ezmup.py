@@ -222,7 +222,7 @@ class Ezmup:
 
                     lr_scaled = lr * mup_scaling.get(name, 1.0)
                     print(f"Scaling {name} lr from {lr} to {lr_scaled}")
-                    new_param_groups.append(param_group.merge({"lr": lr_scaled}))
+                    new_param_groups.append(param_group.update({"lr": lr_scaled}))
 
         optimizer = optimizer_class(new_param_groups, **kwargs)
 
