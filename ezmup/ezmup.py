@@ -9,7 +9,7 @@ import torch
 from torch import nn
 from torch.optim import Adam
 
-from utils import process_param_groups
+from .utils import process_param_groups
 
 
 def spectral_sigma(fan_in, fan_out, init_std):
