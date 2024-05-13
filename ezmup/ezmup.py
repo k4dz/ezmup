@@ -211,7 +211,6 @@ class Ezmup:
 
         print(f"mup_scaling keys: {mup_scaling.keys()}")
 
-        new_param_groups = []
         processed_param_group = process_param_groups(params, **kwargs)
 
         for param_group in processed_param_group:
@@ -221,9 +220,9 @@ class Ezmup:
 
             lr_scaled = lr * mup_scaling.get(name, 1.0)
             print(f"Scaling {name} lr from {lr} to {lr_scaled}")
-            new_param_groups.append(param_group.update({"lr": lr_scaled}))
+            param_group.update({"lr": lr_scaled})
 
-        optimizer = optimizer_class(new_param_groups, **kwargs)
+        optimizer = optimizer_class(processed_param_group, **kwargs)
 
         return optimizer
 
