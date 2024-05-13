@@ -160,9 +160,9 @@ class Ezmup:
                 init_std = init_std(fan_in, fan_out, self._get_init_std(name))
 
             if isinstance(lr_scaling, float):
-                lr_scaling = lr_scaling / 64
+                lr_scaling = lr_scaling
             else:
-                lr_scaling = lr_scaling(fan_in, fan_out) / 64
+                lr_scaling = lr_scaling(fan_in, fan_out)
 
             self.lr_scaling_dict[name] = lr_scaling
 
