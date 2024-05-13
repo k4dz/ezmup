@@ -214,15 +214,14 @@ class Ezmup:
         new_param_groups = []
         processed_param_group = process_param_groups(params, **kwargs)
 
-        for name, p in self.model.named_parameters():
-            for param_group in processed_param_group:
-                if name == param_group["name"]:
-                    lr = param_group["lr"]
-                    scaling = mup_scaling.get(name, 1.0)
+        for param_group in processed_param_group:
+            name = param_group["name"]
+            lr = param_group["lr"]
+            scaling = mup_scaling.get(name, 1.0)
 
-                    lr_scaled = lr * mup_scaling.get(name, 1.0)
-                    print(f"Scaling {name} lr from {lr} to {lr_scaled}")
-                    new_param_groups.append(param_group.update({"lr": lr_scaled}))
+            lr_scaled = lr * mup_scaling.get(name, 1.0)
+            print(f"Scaling {name} lr from {lr} to {lr_scaled}")
+            new_param_groups.append(param_group.update({"lr": lr_scaled}))
 
         optimizer = optimizer_class(new_param_groups, **kwargs)
 
