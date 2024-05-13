@@ -216,7 +216,7 @@ class Ezmup:
 
         for name, p in self.model.named_parameters():
             for param_group in processed_param_group:
-                if p in param_group["params"]:
+                if name == param_group["name"]:
                     lr = param_group["lr"]
                     scaling = mup_scaling.get(name, 1.0)
 
