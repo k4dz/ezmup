@@ -9,6 +9,8 @@ import torch
 from torch import nn
 from torch.optim import Adam
 
+from utils import process_param_groups
+
 
 def spectral_sigma(fan_in, fan_out, init_std):
     """Spectral parameterization from the [paper](https://arxiv.org/abs/2310.17813)."""
@@ -193,7 +195,8 @@ class Ezmup:
 
         self.model.to(dtype=dtype, device=device)
 
-    def get_optimizer(self, optimizer_class: Any, lr: float, **kwargs):
+
+    def get_optimizer(self, optimizer_class: Any, params, **kwargs):
         """Get an optimizer for the model.
 
         Args:
@@ -208,18 +211,23 @@ class Ezmup:
 
         print(f"mup_scaling keys: {mup_scaling.keys()}")
 
-        optimizer_groups = []
+        new_param_groups = []
+        processed_param_group = process_param_groups(params, **kwargs)
+
         for name, p in self.model.named_parameters():
-            lr_scaled = lr * mup_scaling.get(name, 1.0)
-            print("name of param", name, "lr scaled", lr_scaled)
-            optimizer_groups.append({"params": [p], "lr": lr_scaled })
+            for param_group in processed_param_group:
+                if p in param_group["params"]:
+                    lr = param_group["lr"]
+                    scaling = mup_scaling.get(name, 1.0)
 
-        optimizer = optimizer_class(optimizer_groups, **kwargs)
+                    lr_scaled = lr * mup_scaling.get(name, 1.0)
+                    print(f"Scaling {name} lr from {lr} to {lr_scaled}")
+                    new_param_groups.append(param_group.merge({"lr": lr_scaled}))
 
-        for group in optimizer.param_groups:
-            print(group["lr"])
+        optimizer = optimizer_class(new_param_groups, **kwargs)
 
         return optimizer
+
 
     def _get_init_std(self, name):
         if isinstance(self.init_std, dict):
