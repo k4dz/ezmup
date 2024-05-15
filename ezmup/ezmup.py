@@ -227,6 +227,32 @@ class Ezmup:
         return optimizer
 
 
+    def get_optimizer_params(self, params, **kwargs):
+        """Get an optimizer for the model.
+
+        Args:
+            optimizer_class (Any): Optimizer class.
+            lr (float): Learning rate.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Any: Updated optimizer.
+        """
+        mup_scaling = self.lr_scaling_dict
+
+        processed_param_group = process_param_groups(params, **kwargs)
+
+        for param_group in processed_param_group:
+            name = param_group["name"]
+            lr = param_group["lr"]
+            scaling = mup_scaling.get(name, 1.0)
+
+            lr_scaled = lr * mup_scaling.get(name, 1.0)
+            print(f"Scaling {name} lr from {lr} to {lr_scaled}")
+            param_group.update({"lr": lr_scaled})
+        return processed_param_group
+
+
     def _get_init_std(self, name):
         if isinstance(self.init_std, dict):
             return self.init_std.get(name, 1.0)
